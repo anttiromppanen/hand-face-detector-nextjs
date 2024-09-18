@@ -87,7 +87,6 @@ export default function Home() {
         for (const landmarks of handDetections.landmarks) {
           drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
             color: "#00FF00",
-            fillColor: "white",
             lineWidth: 5,
             visibilityMin: -1,
           });
