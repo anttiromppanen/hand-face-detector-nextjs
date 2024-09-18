@@ -63,13 +63,18 @@
   height: 32px;
 }
 
-.icon_selected {
-  color: #ff206e;
+.icon_not_selected {
+  color: #c01853;
   composes: icon;
 }
 
-.icon_not_selected {
-  color: #29f8b3;
+.icon_selected {
+  color: #178b65;
+  composes: icon;
+}
+
+.camera_icon {
+  color: rgba(0, 0, 0, 0.7);
   composes: icon;
 }
 

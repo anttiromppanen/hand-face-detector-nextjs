@@ -83,7 +83,7 @@ export default function Home() {
       canvasCtx.translate(-videoWidth, 0);
 
       // Draw hand landmarks
-      if (handDetections?.landmarks) {
+      if (handDetections?.landmarks && showHandLines) {
         for (const landmarks of handDetections.landmarks) {
           drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
             color: "#00FF00",
@@ -99,7 +99,7 @@ export default function Home() {
       }
 
       // Draw face landmarks
-      if (faceDetections?.faceLandmarks) {
+      if (faceDetections?.faceLandmarks && showFaceLines) {
         for (const landmarks of faceDetections.faceLandmarks) {
           drawingUtilsForFace.drawConnectors(
             landmarks,
@@ -149,7 +149,7 @@ export default function Home() {
         }
       }
     }
-  }, [handLandmarker, faceLandmarker]);
+  }, [handLandmarker, faceLandmarker, showHandLines, showFaceLines]);
 
   useEffect(() => {
     // Initialize Hand landmarker
@@ -174,9 +174,11 @@ export default function Home() {
   }, [faceLandmarker]);
 
   useEffect(() => {
-    setInterval(() => {
+    const interval = setInterval(() => {
       handDetectionsLoop();
     }, 100);
+
+    return () => clearInterval(interval);
   }, [handDetectionsLoop]);
 
   return (
@@ -203,7 +205,7 @@ export default function Home() {
           >
             <HandRaisedIcon
               className={
-                showHandLines ? styles.icon_not_selected : styles.icon_selected
+                showHandLines ? styles.icon_selected : styles.icon_not_selected
               }
             />
           </button>
@@ -215,7 +217,7 @@ export default function Home() {
           >
             <FaceSmileIcon
               className={
-                showFaceLines ? styles.icon_not_selected : styles.icon_selected
+                showFaceLines ? styles.icon_selected : styles.icon_not_selected
               }
             />
           </button>
@@ -229,11 +231,7 @@ export default function Home() {
             }
             className={styles.toggle_lines_button}
           >
-            <CameraIcon
-              className={
-                showFaceLines ? styles.icon_not_selected : styles.icon_selected
-              }
-            />
+            <CameraIcon className={styles.camera_icon} />
           </button>
         </div>
       </div>
