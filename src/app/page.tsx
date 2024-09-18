@@ -1,24 +1,25 @@
-'use client';
+"use client";
 
 import {
   CameraIcon,
   FaceSmileIcon,
   HandRaisedIcon,
-} from '@heroicons/react/24/solid';
-import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
-import { HAND_CONNECTIONS } from '@mediapipe/hands';
+} from "@heroicons/react/24/solid";
+import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
+import { HAND_CONNECTIONS } from "@mediapipe/hands";
 import {
   FilesetResolver,
   HandLandmarker,
   HandLandmarkerResult,
-} from '@mediapipe/tasks-vision';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Webcam from 'react-webcam';
-import styles from './page.module.css';
+  FaceLandmarker,
+} from "@mediapipe/tasks-vision";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Webcam from "react-webcam";
+import styles from "./page.module.css";
 
 const cameraModeSelector = {
-  user: 'user',
-  environment: { exact: 'environment' },
+  user: "user",
+  environment: { exact: "environment" },
 };
 
 export default function Home() {
@@ -27,9 +28,12 @@ export default function Home() {
   const [handLandmarker, setHandLandmarker] = useState<HandLandmarker | null>(
     null
   );
+  const [faceLandmarker, setFaceLandmarker] = useState<FaceLandmarker | null>(
+    null
+  );
   const [cameraFacingMode, setCameraFacingMode] = useState<
-    'user' | 'environment'
-  >('user');
+    "user" | "environment"
+  >("user");
   const cameraRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastVideoTime = useRef(-1);
@@ -37,16 +41,31 @@ export default function Home() {
   async function initializeHandLandmarker() {
     const vision = await FilesetResolver.forVisionTasks(
       // path/to/wasm/root
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm'
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
     );
     const handLandmarker = await HandLandmarker.createFromOptions(vision, {
       baseOptions: {
-        modelAssetPath: '/hand_landmarker.task',
-        delegate: 'GPU',
+        modelAssetPath: "/hand_landmarker.task",
+        delegate: "GPU",
       },
       numHands: 2,
+      runningMode: "VIDEO",
     });
     return handLandmarker;
+  }
+
+  async function intializeFaceLandmarker() {
+    const vision = await FilesetResolver.forVisionTasks(
+      // path/to/wasm/root
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+    );
+    const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: "/face_landmarker.task",
+      },
+      runningMode: "VIDEO",
+    });
+    return faceLandmarker;
   }
 
   const handDetectionsLoop = useCallback(() => {
@@ -69,7 +88,7 @@ export default function Home() {
     canvas.height = videoHeight;
 
     let detections: HandLandmarkerResult | null = null;
-    const canvasCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    const canvasCtx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
     if (videoHeight && videoWidth && video.readyState >= 2) {
       const startTimeMs = performance.now();
@@ -86,12 +105,12 @@ export default function Home() {
       if (detections?.landmarks) {
         for (const landmarks of detections.landmarks) {
           drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
-            color: '#00FF00',
+            color: "#00FF00",
             lineWidth: 5,
             visibilityMin: -1,
           });
           drawLandmarks(canvasCtx, landmarks, {
-            color: '#FF0000',
+            color: "#FF0000",
             lineWidth: 2,
             visibilityMin: -1,
           });
@@ -101,16 +120,26 @@ export default function Home() {
   }, [handLandmarker]);
 
   useEffect(() => {
-    // Initialize Hand and Face landmarkers
+    // Initialize Hand landmarker
     if (!handLandmarker) {
       (async () => {
         const handLandmarker = await initializeHandLandmarker();
         setHandLandmarker(handLandmarker);
-        await handLandmarker.setOptions({ runningMode: 'VIDEO' });
-        console.log('Hand Landmarker initialized');
+        console.log("Hand Landmarker initialized");
       })();
     }
-  }, [handLandmarker, handDetectionsLoop]);
+  }, [handLandmarker]);
+
+  useEffect(() => {
+    // Initialize Face landmarker
+    if (!faceLandmarker) {
+      (async () => {
+        const faceLandmarker = await intializeFaceLandmarker();
+        setFaceLandmarker(faceLandmarker);
+        console.log("Face Landmarker initialized");
+      })();
+    }
+  }, [faceLandmarker]);
 
   useEffect(() => {
     setInterval(() => {
@@ -163,7 +192,7 @@ export default function Home() {
             title="Toggle camera facing mode"
             onClick={() =>
               setCameraFacingMode((mode) =>
-                mode === 'user' ? 'environment' : 'user'
+                mode === "user" ? "environment" : "user"
               )
             }
             className={styles.toggle_lines_button}
