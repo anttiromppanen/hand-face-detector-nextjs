@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  CONNECTION_COLOR,
+  LEFT_SIDE_COLOR,
+  RIGHT_SIDE_COLOR,
+  TESSELATION_COLOR,
+} from "@/const/colors";
+import {
   initializeHandLandmarker,
   intializeFaceLandmarker,
 } from "@/utils/initializeLandmarkers";
@@ -84,14 +90,24 @@ export default function Home() {
 
       // Draw hand landmarks
       if (handDetections?.landmarks && showHandLines) {
-        for (const landmarks of handDetections.landmarks) {
+        const handedness = handDetections.handedness;
+
+        for (let i = 0; i < handDetections.landmarks.length; i++) {
+          const landmarks = handDetections.landmarks[i];
+
+          // selects color for hand side, might fail for more than 2 hands
+          const handColor =
+            handedness[i][0].categoryName === "Right"
+              ? RIGHT_SIDE_COLOR
+              : LEFT_SIDE_COLOR;
+
           drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
-            color: "#00FF00",
-            lineWidth: 5,
+            color: TESSELATION_COLOR,
+            lineWidth: 3,
             visibilityMin: -1,
           });
           drawLandmarks(canvasCtx, landmarks, {
-            color: "#FF0000",
+            color: handColor,
             lineWidth: 2,
             visibilityMin: -1,
           });
@@ -104,47 +120,47 @@ export default function Home() {
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-            { color: "#C0C0C070", lineWidth: 1 }
+            { color: TESSELATION_COLOR, lineWidth: 1 }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-            { color: "#FF3030" }
+            { color: RIGHT_SIDE_COLOR }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-            { color: "#FF3030" }
+            { color: RIGHT_SIDE_COLOR }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-            { color: "#30FF30" }
+            { color: LEFT_SIDE_COLOR }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-            { color: "#30FF30" }
+            { color: LEFT_SIDE_COLOR }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-            { color: "#E0E0E0" }
+            { color: CONNECTION_COLOR }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_LIPS,
-            { color: "#E0E0E0" }
+            { color: CONNECTION_COLOR }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-            { color: "#FF3030" }
+            { color: RIGHT_SIDE_COLOR }
           );
           drawingUtilsForFace.drawConnectors(
             landmarks,
             FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-            { color: "#30FF30" }
+            { color: LEFT_SIDE_COLOR }
           );
         }
       }
@@ -176,7 +192,7 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(() => {
       handDetectionsLoop();
-    }, 100);
+    }, 10);
 
     return () => clearInterval(interval);
   }, [handDetectionsLoop]);
