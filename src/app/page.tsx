@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  initializeHandLandmarker,
+  intializeFaceLandmarker,
+} from "@/utils/initializeLandmarkers";
+import {
   CameraIcon,
   FaceSmileIcon,
   HandRaisedIcon,
@@ -8,10 +12,11 @@ import {
 import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
 import { HAND_CONNECTIONS } from "@mediapipe/hands";
 import {
-  FilesetResolver,
+  DrawingUtils,
+  FaceLandmarker,
+  FaceLandmarkerResult,
   HandLandmarker,
   HandLandmarkerResult,
-  FaceLandmarker,
 } from "@mediapipe/tasks-vision";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
@@ -38,39 +43,10 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lastVideoTime = useRef(-1);
 
-  async function initializeHandLandmarker() {
-    const vision = await FilesetResolver.forVisionTasks(
-      // path/to/wasm/root
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-    );
-    const handLandmarker = await HandLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: "/hand_landmarker.task",
-        delegate: "GPU",
-      },
-      numHands: 2,
-      runningMode: "VIDEO",
-    });
-    return handLandmarker;
-  }
-
-  async function intializeFaceLandmarker() {
-    const vision = await FilesetResolver.forVisionTasks(
-      // path/to/wasm/root
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-    );
-    const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: "/face_landmarker.task",
-      },
-      runningMode: "VIDEO",
-    });
-    return faceLandmarker;
-  }
-
   const handDetectionsLoop = useCallback(() => {
     if (
       !handLandmarker ||
+      !faceLandmarker ||
       !cameraRef.current ||
       !cameraRef.current.video ||
       !canvasRef.current
@@ -87,25 +63,31 @@ export default function Home() {
     canvas.width = videoWidth;
     canvas.height = videoHeight;
 
-    let detections: HandLandmarkerResult | null = null;
+    let handDetections: HandLandmarkerResult | null = null;
+    let faceDetections: FaceLandmarkerResult | null = null;
     const canvasCtx = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+    const drawingUtilsForFace = new DrawingUtils(canvasCtx);
 
     if (videoHeight && videoWidth && video.readyState >= 2) {
       const startTimeMs = performance.now();
 
       if (lastVideoTime.current !== video.currentTime) {
         lastVideoTime.current = video.currentTime;
-        detections = handLandmarker.detectForVideo(video, startTimeMs);
+        handDetections = handLandmarker.detectForVideo(video, startTimeMs);
+        faceDetections = faceLandmarker.detectForVideo(video, startTimeMs);
       }
 
       // Mirror the canvas horizontally
       canvasCtx.scale(-1, 1);
       canvasCtx.translate(-videoWidth, 0);
 
-      if (detections?.landmarks) {
-        for (const landmarks of detections.landmarks) {
+      // Draw hand landmarks
+      if (handDetections?.landmarks) {
+        for (const landmarks of handDetections.landmarks) {
           drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
             color: "#00FF00",
+            fillColor: "white",
             lineWidth: 5,
             visibilityMin: -1,
           });
@@ -116,8 +98,59 @@ export default function Home() {
           });
         }
       }
+
+      // Draw face landmarks
+      if (faceDetections?.faceLandmarks) {
+        for (const landmarks of faceDetections.faceLandmarks) {
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+            { color: "#C0C0C070", lineWidth: 1 }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+            { color: "#FF3030" }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+            { color: "#FF3030" }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+            { color: "#30FF30" }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+            { color: "#30FF30" }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+            { color: "#E0E0E0" }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_LIPS,
+            { color: "#E0E0E0" }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
+            { color: "#FF3030" }
+          );
+          drawingUtilsForFace.drawConnectors(
+            landmarks,
+            FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
+            { color: "#30FF30" }
+          );
+        }
+      }
     }
-  }, [handLandmarker]);
+  }, [handLandmarker, faceLandmarker]);
 
   useEffect(() => {
     // Initialize Hand landmarker
