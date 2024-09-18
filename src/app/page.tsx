@@ -72,8 +72,9 @@ export default function Home() {
     let handDetections: HandLandmarkerResult | null = null;
     let faceDetections: FaceLandmarkerResult | null = null;
     const canvasCtx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    const canvasWebGl = canvas.getContext("webgl") as WebGL2RenderingContext;
 
-    const drawingUtilsForFace = new DrawingUtils(canvasCtx);
+    const drawingUtilsForFace = new DrawingUtils(canvasCtx, canvasWebGl);
 
     if (videoHeight && videoWidth && video.readyState >= 2) {
       const startTimeMs = performance.now();
