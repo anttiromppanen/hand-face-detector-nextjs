@@ -60,7 +60,7 @@ export default function Home() {
   useEffect(() => {
     const interval = setInterval(() => {
       handAndFaceDetectionsLoop();
-    }, 10);
+    }, 100);
 
     return () => clearInterval(interval);
   }, [handAndFaceDetectionsLoop]);

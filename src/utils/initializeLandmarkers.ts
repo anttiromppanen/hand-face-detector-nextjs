@@ -13,6 +13,9 @@ export async function initializeHandLandmarker() {
     },
     numHands: 2,
     runningMode: "VIDEO",
+    minHandDetectionConfidence: 0.8,
+    minHandPresenceConfidence: 0.8,
+    minTrackingConfidence: 0.9,
   });
   return handLandmarker;
 }
@@ -30,6 +33,9 @@ export async function intializeFaceLandmarker() {
     outputFaceBlendshapes: true,
     numFaces: 2,
     runningMode: "VIDEO",
+    minFaceDetectionConfidence: 0.8,
+    minFacePresenceConfidence: 0.8,
+    minTrackingConfidence: 0.9,
   });
   return faceLandmarker;
 }
