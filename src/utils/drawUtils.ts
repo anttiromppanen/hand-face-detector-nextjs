@@ -1,11 +1,17 @@
 import {
+  CONNECTION_COLOR,
   LEFT_SIDE_COLOR,
   RIGHT_SIDE_COLOR,
   TESSELATION_COLOR,
 } from "@/const/colors";
 import { drawConnectors, drawLandmarks } from "@mediapipe/drawing_utils";
 import { HAND_CONNECTIONS } from "@mediapipe/hands";
-import { HandLandmarkerResult } from "@mediapipe/tasks-vision";
+import {
+  DrawingUtils,
+  FaceLandmarker,
+  FaceLandmarkerResult,
+  HandLandmarkerResult,
+} from "@mediapipe/tasks-vision";
 
 export function drawHands(
   handDetections: HandLandmarkerResult | null,
@@ -34,6 +40,62 @@ export function drawHands(
         lineWidth: 1,
         visibilityMin: -1,
       });
+    }
+  }
+}
+
+export function drawFaces(
+  faceDetections: FaceLandmarkerResult | null,
+  drawingUtilsForFace: DrawingUtils,
+  showFaceLines: boolean
+) {
+  if (faceDetections?.faceLandmarks && showFaceLines) {
+    for (const landmarks of faceDetections.faceLandmarks) {
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_TESSELATION,
+        { color: TESSELATION_COLOR, lineWidth: 1 }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
+        { color: RIGHT_SIDE_COLOR }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
+        { color: RIGHT_SIDE_COLOR }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
+        { color: LEFT_SIDE_COLOR }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
+        { color: LEFT_SIDE_COLOR }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
+        { color: CONNECTION_COLOR }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LIPS,
+        { color: CONNECTION_COLOR }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
+        { color: RIGHT_SIDE_COLOR }
+      );
+      drawingUtilsForFace.drawConnectors(
+        landmarks,
+        FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
+        { color: LEFT_SIDE_COLOR }
+      );
     }
   }
 }

@@ -1,10 +1,4 @@
-import {
-  CONNECTION_COLOR,
-  LEFT_SIDE_COLOR,
-  RIGHT_SIDE_COLOR,
-  TESSELATION_COLOR,
-} from "@/const/colors";
-import { drawHands } from "@/utils/drawUtils";
+import { drawFaces, drawHands } from "@/utils/drawUtils";
 import {
   DrawingUtils,
   FaceLandmarker,
@@ -80,55 +74,7 @@ function useHandAndFaceDetection({
       drawHands(handDetections, canvasCtx, showHandLines);
 
       // Draw face landmarks
-      if (faceDetections?.faceLandmarks && showFaceLines) {
-        for (const landmarks of faceDetections.faceLandmarks) {
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_TESSELATION,
-            { color: TESSELATION_COLOR, lineWidth: 1 }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_RIGHT_EYE,
-            { color: RIGHT_SIDE_COLOR }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW,
-            { color: RIGHT_SIDE_COLOR }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_LEFT_EYE,
-            { color: LEFT_SIDE_COLOR }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_LEFT_EYEBROW,
-            { color: LEFT_SIDE_COLOR }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_FACE_OVAL,
-            { color: CONNECTION_COLOR }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_LIPS,
-            { color: CONNECTION_COLOR }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_RIGHT_IRIS,
-            { color: RIGHT_SIDE_COLOR }
-          );
-          drawingUtilsForFace.drawConnectors(
-            landmarks,
-            FaceLandmarker.FACE_LANDMARKS_LEFT_IRIS,
-            { color: LEFT_SIDE_COLOR }
-          );
-        }
-      }
+      drawFaces(faceDetections, drawingUtilsForFace, showFaceLines);
     }
   }, [
     cameraRef,
