@@ -35,6 +35,10 @@ a {
   text-decoration: none;
 }
 
+.rounded-corners {
+  border-radius: 20px;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
