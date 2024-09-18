@@ -1,95 +1,181 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+
+import {
+  CameraIcon,
+  FaceSmileIcon,
+  HandRaisedIcon,
+} from '@heroicons/react/24/solid';
+import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
+import { HAND_CONNECTIONS } from '@mediapipe/hands';
+import {
+  FilesetResolver,
+  HandLandmarker,
+  HandLandmarkerResult,
+} from '@mediapipe/tasks-vision';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Webcam from 'react-webcam';
+import styles from './page.module.css';
+
+const cameraModeSelector = {
+  user: 'user',
+  environment: { exact: 'environment' },
+};
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [showHandLines, setShowHandLines] = useState(true);
+  const [showFaceLines, setShowFaceLines] = useState(true);
+  const [handLandmarker, setHandLandmarker] = useState<HandLandmarker | null>(
+    null
+  );
+  const [cameraFacingMode, setCameraFacingMode] = useState<
+    'user' | 'environment'
+  >('user');
+  const cameraRef = useRef<Webcam>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lastVideoTime = useRef(-1);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  async function initializeHandLandmarker() {
+    const vision = await FilesetResolver.forVisionTasks(
+      // path/to/wasm/root
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm'
+    );
+    const handLandmarker = await HandLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: '/hand_landmarker.task',
+        delegate: 'GPU',
+      },
+      numHands: 2,
+    });
+    return handLandmarker;
+  }
+
+  const handDetectionsLoop = useCallback(() => {
+    if (
+      !handLandmarker ||
+      !cameraRef.current ||
+      !cameraRef.current.video ||
+      !canvasRef.current
+    ) {
+      return;
+    }
+    // video element & dimensions
+    const video = cameraRef.current.video;
+    const videoHeight = video.videoHeight;
+    const videoWidth = video.videoWidth;
+
+    // set canvas dimensions
+    const canvas = canvasRef.current;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+
+    let detections: HandLandmarkerResult | null = null;
+    const canvasCtx = canvas.getContext('2d') as CanvasRenderingContext2D;
+
+    if (videoHeight && videoWidth && video.readyState >= 2) {
+      const startTimeMs = performance.now();
+
+      if (lastVideoTime.current !== video.currentTime) {
+        lastVideoTime.current = video.currentTime;
+        detections = handLandmarker.detectForVideo(video, startTimeMs);
+      }
+
+      // Mirror the canvas horizontally
+      canvasCtx.scale(-1, 1);
+      canvasCtx.translate(-videoWidth, 0);
+
+      if (detections?.landmarks) {
+        for (const landmarks of detections.landmarks) {
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {
+            color: '#00FF00',
+            lineWidth: 5,
+            visibilityMin: -1,
+          });
+          drawLandmarks(canvasCtx, landmarks, {
+            color: '#FF0000',
+            lineWidth: 2,
+            visibilityMin: -1,
+          });
+        }
+      }
+    }
+  }, [handLandmarker]);
+
+  useEffect(() => {
+    // Initialize Hand and Face landmarkers
+    if (!handLandmarker) {
+      (async () => {
+        const handLandmarker = await initializeHandLandmarker();
+        setHandLandmarker(handLandmarker);
+        await handLandmarker.setOptions({ runningMode: 'VIDEO' });
+        console.log('Hand Landmarker initialized');
+      })();
+    }
+  }, [handLandmarker, handDetectionsLoop]);
+
+  useEffect(() => {
+    setInterval(() => {
+      handDetectionsLoop();
+    }, 100);
+  }, [handDetectionsLoop]);
+
+  return (
+    <main className={styles.container}>
+      <div className={styles.camera__container}>
+        <Webcam
+          audio={false}
+          mirrored
+          ref={cameraRef}
+          videoConstraints={{
+            width: 1280,
+            height: 720,
+            facingMode: cameraModeSelector[cameraFacingMode],
+          }}
+          className={styles.camera}
+        />
+        <canvas ref={canvasRef} className={styles.canvas} />
+        <div className={styles.buttons_container}>
+          <button
+            type="button"
+            title="Toggle hand lines visibility"
+            onClick={() => setShowHandLines((state) => !state)}
+            className={styles.toggle_lines_button}
           >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            <HandRaisedIcon
+              className={
+                showHandLines ? styles.icon_not_selected : styles.icon_selected
+              }
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
+          </button>
+          <button
+            type="button"
+            title="Toggle face lines visibility"
+            onClick={() => setShowFaceLines((state) => !state)}
+            className={styles.toggle_lines_button}
           >
-            Read our docs
-          </a>
+            <FaceSmileIcon
+              className={
+                showFaceLines ? styles.icon_not_selected : styles.icon_selected
+              }
+            />
+          </button>
+          <button
+            type="button"
+            title="Toggle camera facing mode"
+            onClick={() =>
+              setCameraFacingMode((mode) =>
+                mode === 'user' ? 'environment' : 'user'
+              )
+            }
+            className={styles.toggle_lines_button}
+          >
+            <CameraIcon
+              className={
+                showFaceLines ? styles.icon_not_selected : styles.icon_selected
+              }
+            />
+          </button>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </main>
   );
 }
